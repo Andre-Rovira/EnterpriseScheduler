@@ -30,11 +30,16 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Title).IsRequired();
             entity.Property(e => e.StartTime).IsRequired();
             entity.Property(e => e.EndTime).IsRequired();
+
+            // Add indexes for efficient time range queries
+            entity.HasIndex(e => e.StartTime);
+            entity.HasIndex(e => e.EndTime);
         });
 
         modelBuilder.Entity<Meeting>()
             .HasMany(m => m.Participants)
             .WithMany(u => u.Meetings)
-            .UsingEntity(j => j.ToTable("MeetingParticipants"));
+            .UsingEntity(j => j.ToTable("MeetingParticipants"))
+            .HasIndex("ParticipantsId");
     }
 }
