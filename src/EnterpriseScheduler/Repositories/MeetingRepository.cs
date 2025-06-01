@@ -14,6 +14,25 @@ public class MeetingRepository : IMeetingRepository
         _context = context;
     }
 
+    public async Task<PaginatedResult<Meeting>> GetPaginatedAsync(int pageNumber, int pageSize)
+    {
+        var query = _context.Meetings.AsNoTracking();
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        
+        return new PaginatedResult<Meeting>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<Meeting> GetByIdAsync(Guid id)
     {
         var meeting = await _context.Meetings.SingleOrDefaultAsync(m => m.Id == id);
@@ -21,16 +40,10 @@ public class MeetingRepository : IMeetingRepository
         return meeting ?? throw new KeyNotFoundException($"Meeting with ID {id} not found");
     }
 
-    public async Task<IEnumerable<Meeting>> GetAllAsync()
+    public async Task AddAsync(Meeting meeting)
     {
-        return await _context.Meetings.ToListAsync();
-    }
-
-    public async Task<Meeting> AddAsync(Meeting meeting)
-    {
-        await _context.Meetings.AddAsync(meeting);
+        _context.Meetings.Add(meeting);
         await _context.SaveChangesAsync();
-        return meeting;
     }
 
     public async Task UpdateAsync(Meeting meeting)
@@ -39,13 +52,9 @@ public class MeetingRepository : IMeetingRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Meeting meeting)
     {
-        var meeting = await _context.Meetings.FindAsync(id);
-        if (meeting != null)
-        {
-            _context.Meetings.Remove(meeting);
-            await _context.SaveChangesAsync();
-        }
+        _context.Meetings.Remove(meeting);
+        await _context.SaveChangesAsync();
     }
 }

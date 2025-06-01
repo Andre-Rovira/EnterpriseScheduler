@@ -4,9 +4,9 @@ namespace EnterpriseScheduler.Interfaces;
 
 public interface IMeetingRepository
 {
+    Task<PaginatedResult<Meeting>> GetPaginatedAsync(int pageNumber, int pageSize);
     Task<Meeting> GetByIdAsync(Guid id);
-    Task<IEnumerable<Meeting>> GetAllAsync();
-    Task<Meeting> AddAsync(Meeting meeting);
+    Task AddAsync(Meeting meeting);
     Task UpdateAsync(Meeting meeting);
-    Task DeleteAsync(Guid id);
+    Task DeleteAsync(Meeting meeting);
 }
