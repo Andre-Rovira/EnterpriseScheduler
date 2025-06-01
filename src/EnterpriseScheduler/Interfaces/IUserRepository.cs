@@ -1,6 +1,6 @@
 using EnterpriseScheduler.Models;
 
-namespace EnterpriseScheduler.Repositories;
+namespace EnterpriseScheduler.Interfaces;
 
 public interface IUserRepository
 {
@@ -9,4 +9,4 @@ public interface IUserRepository
     Task<User> AddAsync(User user);
     Task UpdateAsync(User user);
     Task DeleteAsync(Guid id);
-} 
+}

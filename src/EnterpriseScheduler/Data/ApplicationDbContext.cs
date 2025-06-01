@@ -17,7 +17,6 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure User
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -25,7 +24,6 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.TimeZone).IsRequired();
         });
 
-        // Configure Meeting
         modelBuilder.Entity<Meeting>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -34,10 +32,9 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.EndTime).IsRequired();
         });
 
-        // Configure many-to-many relationship between Meeting and User
         modelBuilder.Entity<Meeting>()
             .HasMany(m => m.Participants)
             .WithMany(u => u.Meetings)
             .UsingEntity(j => j.ToTable("MeetingParticipants"));
     }
-} 
+}

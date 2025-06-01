@@ -1,6 +1,6 @@
 using EnterpriseScheduler.Models;
 
-namespace EnterpriseScheduler.Repositories;
+namespace EnterpriseScheduler.Interfaces;
 
 public interface IMeetingRepository
 {
@@ -9,9 +9,8 @@ public interface IMeetingRepository
     Task<Meeting> AddAsync(Meeting meeting);
     Task UpdateAsync(Meeting meeting);
     Task DeleteAsync(Guid id);
-    
-    // Scheduling specific methods
+
     Task<IEnumerable<Meeting>> GetMeetingsForUserAsync(Guid userId, DateTime startTime, DateTime endTime);
     Task<bool> HasTimeConflictAsync(Meeting meeting);
     Task<IEnumerable<DateTime>> FindAvailableSlotsAsync(IEnumerable<Guid> participantIds, DateTime startTime, DateTime endTime, TimeSpan duration);
-} 
+}
