@@ -17,7 +17,7 @@ public class MeetingRepository : IMeetingRepository
     public async Task<Meeting> GetByIdAsync(Guid id)
     {
         var meeting = await _context.Meetings.SingleOrDefaultAsync(m => m.Id == id);
-        
+
         return meeting ?? throw new KeyNotFoundException($"Meeting with ID {id} not found");
     }
 
@@ -48,4 +48,4 @@ public class MeetingRepository : IMeetingRepository
             await _context.SaveChangesAsync();
         }
     }
-} 
+}
