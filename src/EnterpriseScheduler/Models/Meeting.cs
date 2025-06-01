@@ -8,9 +8,9 @@ public class Meeting
     [Required]
     public required string Title { get; set; }
     [Required]
-    public DateTime StartTime { get; set; }
+    public DateTimeOffset StartTime { get; set; }
     [Required]
-    public DateTime EndTime { get; set; }
+    public DateTimeOffset EndTime { get; set; }
 
     public ICollection<User> Participants { get; set; } = new List<User>();
 }
