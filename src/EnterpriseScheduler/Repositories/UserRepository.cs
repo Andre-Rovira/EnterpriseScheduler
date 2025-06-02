@@ -19,7 +19,7 @@ public class UserRepository : IUserRepository
     {
         var query = _context.Users.AsNoTracking();
         var totalCount = await query.CountAsync();
-        
+
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)

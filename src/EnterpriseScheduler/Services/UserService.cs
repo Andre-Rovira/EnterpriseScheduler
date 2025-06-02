@@ -26,14 +26,14 @@ namespace EnterpriseScheduler.Services
             if (pageSize > PaginationConstants.MaxPageSize) pageSize = PaginationConstants.MaxPageSize;
 
             var result = await _userRepository.GetPaginatedAsync(page, pageSize);
-            
+
             return _mapper.Map<PaginatedResult<UserResponse>>(result);
         }
 
         public async Task<UserResponse> GetUser(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            
+
             return _mapper.Map<UserResponse>(user);
         }
 
@@ -41,7 +41,7 @@ namespace EnterpriseScheduler.Services
         {
             var user = _mapper.Map<User>(userRequest);
             user.Id = Guid.NewGuid();
-            
+
             await _userRepository.AddAsync(user);
 
             return _mapper.Map<UserResponse>(user);

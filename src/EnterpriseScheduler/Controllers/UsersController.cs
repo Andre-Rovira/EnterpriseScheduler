@@ -51,7 +51,7 @@ public class UsersController : ControllerBase
         }
 
         var createdUser = await _userService.CreateUser(userRequest);
-        
+
         return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
     }
 
@@ -81,7 +81,7 @@ public class UsersController : ControllerBase
         try
         {
             await _userService.DeleteUser(id);
-            
+
             return NoContent();
         }
         catch (KeyNotFoundException ex)

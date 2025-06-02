@@ -24,7 +24,7 @@ public class MeetingRepository : IMeetingRepository
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-        
+
         return new PaginatedResult<Meeting>
         {
             Items = items,

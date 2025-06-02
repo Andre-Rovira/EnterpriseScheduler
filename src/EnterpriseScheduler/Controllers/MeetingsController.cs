@@ -81,7 +81,7 @@ public class MeetingsController : ControllerBase
         try
         {
             await _meetingService.DeleteMeeting(id);
-            
+
             return NoContent();
         }
         catch (KeyNotFoundException ex)

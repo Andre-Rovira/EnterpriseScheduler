@@ -43,11 +43,11 @@ public class MeetingService : IMeetingService
     {
         var meeting = _mapper.Map<Meeting>(meetingRequest);
         meeting.Id = Guid.NewGuid();
-        
+
         // Fetch and set participants
         var participants = await _userRepository.GetByIdsAsync(meetingRequest.ParticipantIds);
         meeting.Participants = participants.ToList();
-        
+
         await _meetingRepository.AddAsync(meeting);
 
         return _mapper.Map<MeetingResponse>(meeting);
@@ -57,11 +57,11 @@ public class MeetingService : IMeetingService
     {
         var existingMeeting = await _meetingRepository.GetByIdAsync(id);
         _mapper.Map(meetingRequest, existingMeeting);
-        
+
         // Fetch and set participants
         var participants = await _userRepository.GetByIdsAsync(meetingRequest.ParticipantIds);
         existingMeeting.Participants = participants.ToList();
-        
+
         await _meetingRepository.UpdateAsync(existingMeeting);
 
         return _mapper.Map<MeetingResponse>(existingMeeting);
