@@ -5,7 +5,7 @@ namespace EnterpriseScheduler.Models.DTOs.Meetings;
 public class MeetingRequest
 {
     [Required]
-    [StringLength(200)]
+    [StringLength(120)]
     public required string Title { get; set; }
 
     [Required]
