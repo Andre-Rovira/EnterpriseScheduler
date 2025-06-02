@@ -41,7 +41,17 @@ This will start a PostgreSQL container with the following configuration:
 If you're running the project for the first time, you'll need to apply the database migrations:
 
 ```bash
+dotnet tool install --global dotnet-ef
+
+cd src/EntrepriseScheduler
 dotnet ef database update
+```
+### PostgreSQL console
+
+To get inside PSQL:
+
+```bash
+docker exec -it scheduler-postgres psql -U scheduler -d scheduler_db
 ```
 
 ### Run the project
