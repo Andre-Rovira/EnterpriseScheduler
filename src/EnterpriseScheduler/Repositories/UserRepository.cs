@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using EnterpriseScheduler.Data;
 using EnterpriseScheduler.Models;
-using EnterpriseScheduler.Interfaces;
+using EnterpriseScheduler.Interfaces.Repositories;
+using EnterpriseScheduler.Models.Common;
 
 namespace EnterpriseScheduler.Repositories;
 
@@ -14,6 +15,25 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
+    public async Task<PaginatedResult<User>> GetPaginatedAsync(int pageNumber, int pageSize)
+    {
+        var query = _context.Users.AsNoTracking();
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PaginatedResult<User>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<User> GetByIdAsync(Guid id)
     {
         var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == id);
@@ -21,16 +41,17 @@ public class UserRepository : IUserRepository
         return user ?? throw new KeyNotFoundException($"User with ID {id} not found");
     }
 
-    public async Task<IEnumerable<User>> GetAllAsync()
+    public async Task<IEnumerable<User>> GetByIdsAsync(IEnumerable<Guid> ids)
     {
-        return await _context.Users.ToListAsync();
+        return await _context.Users
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync();
     }
 
-    public async Task<User> AddAsync(User user)
+    public async Task AddAsync(User user)
     {
-        await _context.Users.AddAsync(user);
+        _context.Users.Add(user);
         await _context.SaveChangesAsync();
-        return user;
     }
 
     public async Task UpdateAsync(User user)
@@ -39,13 +60,9 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(User user)
     {
-        var user = await _context.Users.FindAsync(id);
-        if (user != null)
-        {
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-        }
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
     }
 }
