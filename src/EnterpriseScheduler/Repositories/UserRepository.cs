@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using EnterpriseScheduler.Data;
 using EnterpriseScheduler.Models;
-using EnterpriseScheduler.Interfaces;
+using EnterpriseScheduler.Interfaces.Repositories;
+using EnterpriseScheduler.Models.Common;
 
 namespace EnterpriseScheduler.Repositories;
 
@@ -38,6 +39,13 @@ public class UserRepository : IUserRepository
         var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == id);
 
         return user ?? throw new KeyNotFoundException($"User with ID {id} not found");
+    }
+
+    public async Task<IEnumerable<User>> GetByIdsAsync(IEnumerable<Guid> ids)
+    {
+        return await _context.Users
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync();
     }
 
     public async Task AddAsync(User user)

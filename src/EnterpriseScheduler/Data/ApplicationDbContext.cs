@@ -38,7 +38,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Meeting>()
             .HasMany(m => m.Participants)
-            .WithMany(u => u.Meetings)
-            .UsingEntity(j => j.ToTable("MeetingParticipants"));
+            .WithMany(u => u.Meetings);
     }
 }

@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using EnterpriseScheduler.Data;
 using EnterpriseScheduler.Models;
-using EnterpriseScheduler.Interfaces;
+using EnterpriseScheduler.Interfaces.Repositories;
+using EnterpriseScheduler.Models.Common;
 
 namespace EnterpriseScheduler.Repositories;
 

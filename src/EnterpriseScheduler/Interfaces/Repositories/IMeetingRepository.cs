@@ -1,6 +1,7 @@
 using EnterpriseScheduler.Models;
+using EnterpriseScheduler.Models.Common;
 
-namespace EnterpriseScheduler.Interfaces;
+namespace EnterpriseScheduler.Interfaces.Repositories;
 
 public interface IMeetingRepository
 {

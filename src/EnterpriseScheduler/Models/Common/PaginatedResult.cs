@@ -1,4 +1,4 @@
-namespace EnterpriseScheduler.Models;
+namespace EnterpriseScheduler.Models.Common;
 
 public class PaginatedResult<T>
 {
