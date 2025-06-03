@@ -62,6 +62,13 @@ public class UserRepository : IUserRepository
 
     public async Task DeleteAsync(User user)
     {
+        // Find and delete meetings where this user is the only participant
+        var meetingsToDelete = await _context.Meetings
+            .Where(m => m.Participants.Count == 1 && m.Participants.Any(p => p.Id == user.Id))
+            .ToListAsync();
+        _context.Meetings.RemoveRange(meetingsToDelete);
+
+        // Delete the user
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
     }

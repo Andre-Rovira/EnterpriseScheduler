@@ -41,12 +41,13 @@ public class MeetingService : IMeetingService
 
     public async Task<MeetingResponse> CreateMeeting(MeetingRequest meetingRequest)
     {
+        ConvertToUtc(meetingRequest);
+        ValidateMeetingTimes(meetingRequest);
+
         var meeting = _mapper.Map<Meeting>(meetingRequest);
         meeting.Id = Guid.NewGuid();
 
-        // Fetch and set participants
-        var participants = await _userRepository.GetByIdsAsync(meetingRequest.ParticipantIds);
-        meeting.Participants = participants.ToList();
+        meeting.Participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
 
         await _meetingRepository.AddAsync(meeting);
 
@@ -55,12 +56,13 @@ public class MeetingService : IMeetingService
 
     public async Task<MeetingResponse> UpdateMeeting(Guid id, MeetingRequest meetingRequest)
     {
+        ConvertToUtc(meetingRequest);
+        ValidateMeetingTimes(meetingRequest);
+
         var existingMeeting = await _meetingRepository.GetByIdAsync(id);
         _mapper.Map(meetingRequest, existingMeeting);
 
-        // Fetch and set participants
-        var participants = await _userRepository.GetByIdsAsync(meetingRequest.ParticipantIds);
-        existingMeeting.Participants = participants.ToList();
+        existingMeeting.Participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
 
         await _meetingRepository.UpdateAsync(existingMeeting);
 
@@ -71,5 +73,35 @@ public class MeetingService : IMeetingService
     {
         var meeting = await _meetingRepository.GetByIdAsync(id);
         await _meetingRepository.DeleteAsync(meeting);
+    }
+
+    private void ConvertToUtc(MeetingRequest request)
+    {
+        request.StartTime = request.StartTime.ToUniversalTime();
+        request.EndTime = request.EndTime.ToUniversalTime();
+    }
+
+    private void ValidateMeetingTimes(MeetingRequest meetingRequest)
+    {
+        if (meetingRequest.StartTime >= meetingRequest.EndTime)
+        {
+            throw new ArgumentException("Start time must be before end time.");
+        }
+    }
+
+    private async Task<List<User>> ValidateAndGetParticipants(IEnumerable<Guid> participantIds)
+    {
+        if (participantIds == null || !participantIds.Any())
+        {
+            throw new ArgumentException("At least one participant is required for a meeting.");
+        }
+
+        var participants = await _userRepository.GetByIdsAsync(participantIds);
+        if (!participants.Any())
+        {
+            throw new ArgumentException("At least one valid participant ID is required.");
+        }
+
+        return participants.ToList();
     }
 }

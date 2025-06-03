@@ -4,7 +4,35 @@ A .NET Web API project for enterprise-level scheduling and task management.
 
 ## ℹ️Description
 
-This project provides a robust API for managing and scheduling meeting.
+This project provides a robust API for managing and scheduling meetings. The API supports flexible timezone handling:
+- Accepts meeting times in any timezone (any offset)
+- Automatically converts all times to UTC for storage
+
+## 🚀 CI/CD and Quality Assurance
+
+This project implements a comprehensive CI/CD pipeline using GitHub Actions to ensure code quality and maintainability:
+
+### Automated Workflows
+
+1. **Format Check**
+   - Runs on every push
+   - Ensures consistent code formatting using `dotnet format`
+   - Maintains clean and standardized code style
+
+2. **Test Coverage**
+   - Runs on pull requests to main branch
+   - Executes all unit tests with coverage reporting
+   - Enforces minimum code coverage threshold of 95%
+   - Posts detailed coverage reports as PR comments
+   - Generates coverage badges for quick reference
+
+### Pull Request Process
+
+The project includes a structured pull request template that:
+- Guides contributors through the PR process
+- Categorizes changes (bug fixes, features, documentation, etc.)
+- Ensures consistent PR documentation
+- Helps maintain high-quality code reviews
 
 ## 🛫Getting Started
 
@@ -43,8 +71,7 @@ If you're running the project for the first time, you'll need to apply the datab
 ```bash
 dotnet tool install --global dotnet-ef
 
-cd src/EntrepriseScheduler
-dotnet ef database update
+dotnet ef database update --project src/EnterpriseScheduler/EnterpriseScheduler.csproj
 ```
 ### PostgreSQL console
 
@@ -55,9 +82,9 @@ docker exec -it scheduler-postgres psql -U scheduler -d scheduler_db
 ```
 
 ### Run the project
+
 ```bash
-cd src/EntrepriseScheduler
-dotnet run
+dotnet run --project src/EnterpriseScheduler/EnterpriseScheduler.csproj
 ```
 
 The API will be available at `http://localhost:5085`
