@@ -4,7 +4,9 @@ A .NET Web API project for enterprise-level scheduling and task management.
 
 ## ℹ️Description
 
-This project provides a robust API for managing and scheduling meeting.
+This project provides a robust API for managing and scheduling meetings. The API supports flexible timezone handling:
+- Accepts meeting times in any timezone (any offset)
+- Automatically converts all times to UTC for storage
 
 ## 🚀 CI/CD and Quality Assurance
 
