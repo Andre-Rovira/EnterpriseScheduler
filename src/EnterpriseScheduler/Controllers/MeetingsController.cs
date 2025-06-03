@@ -50,9 +50,15 @@ public class MeetingsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var createdMeeting = await _meetingService.CreateMeeting(meetingRequest);
-
-        return CreatedAtAction(nameof(GetMeeting), new { id = createdMeeting.Id }, createdMeeting);
+        try
+        {
+            var createdMeeting = await _meetingService.CreateMeeting(meetingRequest);
+            return CreatedAtAction(nameof(GetMeeting), new { id = createdMeeting.Id }, createdMeeting);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
@@ -72,6 +78,10 @@ public class MeetingsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 
