@@ -43,7 +43,7 @@ public class MeetingService : IMeetingService
     {
         ConvertToUtc(meetingRequest);
         ValidateMeetingTimes(meetingRequest);
-        
+
         var meeting = _mapper.Map<Meeting>(meetingRequest);
         meeting.Id = Guid.NewGuid();
 
@@ -58,7 +58,7 @@ public class MeetingService : IMeetingService
     {
         ConvertToUtc(meetingRequest);
         ValidateMeetingTimes(meetingRequest);
-        
+
         var existingMeeting = await _meetingRepository.GetByIdAsync(id);
         _mapper.Map(meetingRequest, existingMeeting);
 

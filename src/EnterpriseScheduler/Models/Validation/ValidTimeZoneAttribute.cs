@@ -33,4 +33,4 @@ public class ValidTimeZoneAttribute : ValidationAttribute
 
         return new ValidationResult($"'{timeZoneId}' is not a valid timezone identifier. Please use a valid IANA timezone (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo').");
     }
-} 
+}
