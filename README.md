@@ -41,7 +41,17 @@ This will start a PostgreSQL container with the following configuration:
 If you're running the project for the first time, you'll need to apply the database migrations:
 
 ```bash
+dotnet tool install --global dotnet-ef
+
+cd src/EntrepriseScheduler
 dotnet ef database update
+```
+### PostgreSQL console
+
+To get inside PSQL:
+
+```bash
+docker exec -it scheduler-postgres psql -U scheduler -d scheduler_db
 ```
 
 ### Run the project
@@ -50,7 +60,7 @@ cd src/EntrepriseScheduler
 dotnet run
 ```
 
-The API will be available at `http://localhost:5086`
+The API will be available at `http://localhost:5085`
 
 ### Stopping the Database
 
@@ -62,7 +72,7 @@ docker compose down
 
 ## 📄API Documentation
 
-The API documentation is available [here at `/swagger`](http://localhost:5086/swagger/index.html) when running the application.
+The API documentation is available [here at `/swagger`](http://localhost:5085/swagger/index.html) when running the application.
 
 ## ⚠️Troubleshooting
 
