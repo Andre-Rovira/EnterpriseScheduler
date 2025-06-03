@@ -60,7 +60,7 @@ cd src/EntrepriseScheduler
 dotnet run
 ```
 
-The API will be available at `http://localhost:5086`
+The API will be available at `http://localhost:5085`
 
 ### Stopping the Database
 
@@ -72,7 +72,7 @@ docker compose down
 
 ## 📄API Documentation
 
-The API documentation is available [here at `/swagger`](http://localhost:5086/swagger/index.html) when running the application.
+The API documentation is available [here at `/swagger`](http://localhost:5085/swagger/index.html) when running the application.
 
 ## ⚠️Troubleshooting
 
