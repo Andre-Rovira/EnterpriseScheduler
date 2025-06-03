@@ -43,8 +43,7 @@ If you're running the project for the first time, you'll need to apply the datab
 ```bash
 dotnet tool install --global dotnet-ef
 
-cd src/EntrepriseScheduler
-dotnet ef database update
+dotnet ef database update --project src/EnterpriseScheduler/EnterpriseScheduler.csproj
 ```
 ### PostgreSQL console
 
@@ -55,9 +54,9 @@ docker exec -it scheduler-postgres psql -U scheduler -d scheduler_db
 ```
 
 ### Run the project
+
 ```bash
-cd src/EntrepriseScheduler
-dotnet run
+dotnet run --project src/EnterpriseScheduler/EnterpriseScheduler.csproj
 ```
 
 The API will be available at `http://localhost:5085`
