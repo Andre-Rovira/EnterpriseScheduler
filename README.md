@@ -6,6 +6,32 @@ A .NET Web API project for enterprise-level scheduling and task management.
 
 This project provides a robust API for managing and scheduling meeting.
 
+## 🚀 CI/CD and Quality Assurance
+
+This project implements a comprehensive CI/CD pipeline using GitHub Actions to ensure code quality and maintainability:
+
+### Automated Workflows
+
+1. **Format Check**
+   - Runs on every push
+   - Ensures consistent code formatting using `dotnet format`
+   - Maintains clean and standardized code style
+
+2. **Test Coverage**
+   - Runs on pull requests to main branch
+   - Executes all unit tests with coverage reporting
+   - Enforces minimum code coverage threshold of 95%
+   - Posts detailed coverage reports as PR comments
+   - Generates coverage badges for quick reference
+
+### Pull Request Process
+
+The project includes a structured pull request template that:
+- Guides contributors through the PR process
+- Categorizes changes (bug fixes, features, documentation, etc.)
+- Ensures consistent PR documentation
+- Helps maintain high-quality code reviews
+
 ## 🛫Getting Started
 
 ### Prerequisites
