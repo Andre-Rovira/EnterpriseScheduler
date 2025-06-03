@@ -17,7 +17,9 @@ public class MeetingRepository : IMeetingRepository
 
     public async Task<PaginatedResult<Meeting>> GetPaginatedAsync(int pageNumber, int pageSize)
     {
-        var query = _context.Meetings.AsNoTracking();
+        var query = _context.Meetings
+            .Include(m => m.Participants)
+            .AsNoTracking();
         var totalCount = await query.CountAsync();
 
         var items = await query
@@ -36,7 +38,9 @@ public class MeetingRepository : IMeetingRepository
 
     public async Task<Meeting> GetByIdAsync(Guid id)
     {
-        var meeting = await _context.Meetings.SingleOrDefaultAsync(m => m.Id == id);
+        var meeting = await _context.Meetings
+            .Include(m => m.Participants)
+            .SingleOrDefaultAsync(m => m.Id == id);
 
         return meeting ?? throw new KeyNotFoundException($"Meeting with ID {id} not found");
     }
