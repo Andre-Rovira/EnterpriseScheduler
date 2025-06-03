@@ -38,11 +38,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Meeting>()
             .HasMany(m => m.Participants)
-            .WithMany(u => u.Meetings)
-            .UsingEntity(j => j.ToTable("MeetingUser")
-                .HasOne(typeof(Meeting))
-                .WithMany()
-                .HasForeignKey("MeetingsId")
-                .OnDelete(DeleteBehavior.Cascade));
+            .WithMany(u => u.Meetings);
     }
 }
