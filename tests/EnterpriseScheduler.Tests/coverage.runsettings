@@ -6,6 +6,7 @@
         <Configuration>
           <Exclude>[*]EnterpriseScheduler.Migrations.*</Exclude>
           <ExcludeByFile>**/Program.cs</ExcludeByFile>
+          <ExcludeByLine>src/EnterpriseScheduler/Models/Validation/ValidTimeZoneAttribute.cs:29,30,31,32</ExcludeByLine>
         </Configuration>
       </DataCollector>
     </DataCollectors>
