@@ -36,6 +36,16 @@ public class MeetingRepository : IMeetingRepository
         };
     }
 
+    public async Task<IEnumerable<Meeting>> GetUserMeetings(Guid userId)
+    {
+        var meetings = await _context.Meetings
+            .Include(m => m.Participants)
+            .Where(m => m.Participants.Any(p => p.Id == userId))
+            .ToListAsync();
+
+        return meetings ?? throw new KeyNotFoundException($"Meetings for user with ID {userId} not found");
+    }
+
     public async Task<Meeting> GetByIdAsync(Guid id)
     {
         var meeting = await _context.Meetings

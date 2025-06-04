@@ -27,6 +27,21 @@ public class MeetingsController : ControllerBase
         return Ok(paginatedMeetings);
     }
 
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetUserMeetings(Guid userId)
+    {
+        try
+        {
+            var userMeetings = await _meetingService.GetUserMeetings(userId);
+
+            return Ok(userMeetings);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMeeting(Guid id)
     {

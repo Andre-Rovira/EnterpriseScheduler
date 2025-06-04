@@ -37,7 +37,7 @@ public class UserRepository : IUserRepository
     public async Task<User> GetByIdAsync(Guid id)
     {
         var user = await _context.Users.SingleOrDefaultAsync(u => u.Id == id);
-
+        
         return user ?? throw new KeyNotFoundException($"User with ID {id} not found");
     }
 

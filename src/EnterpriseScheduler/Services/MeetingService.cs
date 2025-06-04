@@ -5,6 +5,7 @@ using EnterpriseScheduler.Interfaces.Repositories;
 using EnterpriseScheduler.Models;
 using EnterpriseScheduler.Models.Common;
 using EnterpriseScheduler.Models.DTOs.Meetings;
+using TimeZoneConverter;
 
 namespace EnterpriseScheduler.Services;
 
@@ -30,6 +31,23 @@ public class MeetingService : IMeetingService
         var result = await _meetingRepository.GetPaginatedAsync(page, pageSize);
 
         return _mapper.Map<PaginatedResult<MeetingResponse>>(result);
+    }
+
+    public async Task<IEnumerable<MeetingResponse>> GetUserMeetings(Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        var timeZoneInfo = TZConvert.GetTimeZoneInfo(user.TimeZone);
+
+        var meetings = await _meetingRepository.GetUserMeetings(userId);
+        var meetingResponses = _mapper.Map<IEnumerable<MeetingResponse>>(meetings);
+
+        foreach (var meeting in meetingResponses)
+        {
+            meeting.StartTime = TimeZoneInfo.ConvertTime(meeting.StartTime, timeZoneInfo);
+            meeting.EndTime = TimeZoneInfo.ConvertTime(meeting.EndTime, timeZoneInfo);
+        }
+
+        return meetingResponses;
     }
 
     public async Task<MeetingResponse> GetMeeting(Guid id)
