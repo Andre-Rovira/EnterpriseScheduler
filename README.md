@@ -103,6 +103,26 @@ docker compose down
 
 The API documentation is available [here at `/swagger`](http://localhost:5085/swagger/index.html) when running the application.
 
+### Postman Collection
+
+A comprehensive Postman collection is available in the `docs/api` directory. This collection includes all API endpoints with example requests and responses.
+
+### Collection Details
+- Location: `docs/api/enterprise-scheduler-api.postman_collection.json`
+- Includes all endpoints for:
+  - Meetings management
+  - User management
+  - Timezone handling
+  - Conflict resolution
+
+### Importing the Collection
+1. Open Postman
+2. Click "Import" button
+4. Select `enterprise-scheduler-api.postman_collection.json`
+
+### Variable Setup
+1. Hover the variable named `baseUrl` on any postman request and when the value window pops, type the new value `http://localhost:5085`
+
 ## ⚠️Troubleshooting
 
 ### Common Issues

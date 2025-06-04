@@ -65,7 +65,7 @@ public class MeetingService : IMeetingService
 
         var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
         var participantIds = participants.Select(p => p.Id).ToList();
-        
+
         var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
         if (conflicts.Any())
         {
@@ -91,7 +91,7 @@ public class MeetingService : IMeetingService
 
         var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
         var participantIds = participants.Select(p => p.Id).ToList();
-        
+
         var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
         if (conflicts.Any())
         {
@@ -149,13 +149,13 @@ public class MeetingService : IMeetingService
     }
 
     private async Task<IEnumerable<TimeSlot>> FindAvailableSlots(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
-    {   
+    {
         var duration = endTime - startTime;
         var availableSlots = new List<TimeSlot>();
         var searchEndTime = startTime.AddDays(7);
 
         var meetings = await GetOrderedMeetingsInRange(startTime, searchEndTime, participantIds);
-        
+
         if (!meetings.Any())
         {
             return new[] { CreateTimeSlot(startTime, duration) };
@@ -183,7 +183,7 @@ public class MeetingService : IMeetingService
         {
             var currentMeeting = meetings[i];
             var nextMeeting = meetings[i + 1];
-            
+
             FindConsecutiveSlotsInGap(currentMeeting.EndTime, nextMeeting.StartTime, duration, availableSlots);
         }
     }
@@ -210,10 +210,10 @@ public class MeetingService : IMeetingService
 
     private TimeSlot CreateTimeSlot(DateTimeOffset startTime, TimeSpan duration)
     {
-        return new TimeSlot 
-        { 
-            StartTime = startTime.ToUniversalTime(), 
-            EndTime = startTime.Add(duration).ToUniversalTime() 
+        return new TimeSlot
+        {
+            StartTime = startTime.ToUniversalTime(),
+            EndTime = startTime.Add(duration).ToUniversalTime()
         };
     }
 }
