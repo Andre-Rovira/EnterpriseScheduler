@@ -140,59 +140,71 @@ public class MeetingService : IMeetingService
     }
 
     private async Task<IEnumerable<TimeSlot>> FindAvailableSlots(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
-    {
+    {   
         var duration = endTime - startTime;
         var availableSlots = new List<TimeSlot>();
+        var searchEndTime = startTime.AddDays(7);
 
-        // Get all meetings for participants ordered by start time
-        var meetings = await _meetingRepository.GetMeetingsInTimeRange(startTime, startTime.AddDays(7), participantIds);
-        var orderedMeetings = meetings.OrderBy(m => m.StartTime).ToList();
-
-        // If no meetings exist, the first slot is available
-        if (!orderedMeetings.Any())
+        var meetings = await GetOrderedMeetingsInRange(startTime, searchEndTime, participantIds);
+        
+        if (!meetings.Any())
         {
-            availableSlots.Add(new TimeSlot { StartTime = startTime, EndTime = startTime.Add(duration) });
-            return availableSlots;
+            return new[] { CreateTimeSlot(startTime, duration) };
         }
 
-        // Check for gaps between meetings and consecutive slots
-        for (int i = 0; i < orderedMeetings.Count - 1; i++)
-        {
-            var currentMeeting = orderedMeetings[i];
-            var nextMeeting = orderedMeetings[i + 1];
-            var gapStart = currentMeeting.EndTime;
-            var gapEnd = nextMeeting.StartTime;
+        FindSlotsBetweenMeetings(meetings, duration, availableSlots);
 
-            // Find all possible slots in this gap
-            var currentSlotStart = gapStart;
-            while (currentSlotStart.Add(duration) <= gapEnd)
-            {
-                availableSlots.Add(new TimeSlot { StartTime = currentSlotStart, EndTime = currentSlotStart.Add(duration) });
-                currentSlotStart = currentSlotStart.Add(duration);
-                if (availableSlots.Count >= 3) break;
-            }
-            if (availableSlots.Count >= 3) break;
-        }
-
-        // Check if there's a gap after the last meeting
         if (availableSlots.Count < 3)
         {
-            var lastMeeting = orderedMeetings.Last();
-            var currentSlotStart = lastMeeting.EndTime;
-            while (availableSlots.Count < 3)
-            {
-                availableSlots.Add(new TimeSlot { StartTime = currentSlotStart, EndTime = currentSlotStart.Add(duration) });
-                currentSlotStart = currentSlotStart.Add(duration);
-            }
-        }
-
-        // Add UTC indication to each slot
-        foreach (var slot in availableSlots)
-        {
-            slot.StartTime = slot.StartTime.ToUniversalTime();
-            slot.EndTime = slot.EndTime.ToUniversalTime();
+            FindSlotsAfterLastMeeting(meetings.Last(), duration, availableSlots);
         }
 
         return availableSlots;
+    }
+
+    private async Task<List<Meeting>> GetOrderedMeetingsInRange(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        var meetings = await _meetingRepository.GetMeetingsInTimeRange(startTime, endTime, participantIds);
+        return meetings.OrderBy(m => m.StartTime).ToList();
+    }
+
+    private void FindSlotsBetweenMeetings(List<Meeting> meetings, TimeSpan duration, List<TimeSlot> availableSlots)
+    {
+        for (int i = 0; i < meetings.Count - 1 && availableSlots.Count < 3; i++)
+        {
+            var currentMeeting = meetings[i];
+            var nextMeeting = meetings[i + 1];
+            
+            FindConsecutiveSlotsInGap(currentMeeting.EndTime, nextMeeting.StartTime, duration, availableSlots);
+        }
+    }
+
+    private void FindSlotsAfterLastMeeting(Meeting lastMeeting, TimeSpan duration, List<TimeSlot> availableSlots)
+    {
+        var currentSlotStart = lastMeeting.EndTime;
+        while (availableSlots.Count < 3)
+        {
+            availableSlots.Add(CreateTimeSlot(currentSlotStart, duration));
+            currentSlotStart = currentSlotStart.Add(duration);
+        }
+    }
+
+    private void FindConsecutiveSlotsInGap(DateTimeOffset gapStart, DateTimeOffset gapEnd, TimeSpan duration, List<TimeSlot> availableSlots)
+    {
+        var currentSlotStart = gapStart;
+        while (currentSlotStart.Add(duration) <= gapEnd && availableSlots.Count < 3)
+        {
+            availableSlots.Add(CreateTimeSlot(currentSlotStart, duration));
+            currentSlotStart = currentSlotStart.Add(duration);
+        }
+    }
+
+    private TimeSlot CreateTimeSlot(DateTimeOffset startTime, TimeSpan duration)
+    {
+        return new TimeSlot 
+        { 
+            StartTime = startTime.ToUniversalTime(), 
+            EndTime = startTime.Add(duration).ToUniversalTime() 
+        };
     }
 }

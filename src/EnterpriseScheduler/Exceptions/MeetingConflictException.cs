@@ -7,7 +7,7 @@ public class MeetingConflictException : Exception
     public IEnumerable<TimeSlot> AvailableSlots { get; }
 
     public MeetingConflictException(IEnumerable<TimeSlot> availableSlots) 
-        : base($"Conflicts with existing meetings. Here are the next available slots: {string.Join(", ", availableSlots)}")
+        : base($"Conflicts with existing meetings. Here are the next available slots in the next 7 days (in UTC):\n{string.Join("\n", availableSlots.Select(s => $"- {s.StartTime:O} to {s.EndTime:O}"))}")
     {
         AvailableSlots = availableSlots;
     }
