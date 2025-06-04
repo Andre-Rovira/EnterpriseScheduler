@@ -1,10 +1,11 @@
-using TimeZoneConverter;
 using System.ComponentModel.DataAnnotations;
+using TimeZoneConverter;
 
 namespace EnterpriseScheduler.Models.Validation;
 
 public class ValidTimeZoneAttribute : ValidationAttribute
 {
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is null)
