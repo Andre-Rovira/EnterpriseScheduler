@@ -1,4 +1,5 @@
 using EnterpriseScheduler.Constants;
+using EnterpriseScheduler.Exceptions;
 using EnterpriseScheduler.Interfaces.Services;
 using EnterpriseScheduler.Models.DTOs.Meetings;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,21 @@ public class MeetingsController : ControllerBase
         var paginatedMeetings = await _meetingService.GetMeetingsPaginated(page, pageSize);
 
         return Ok(paginatedMeetings);
+    }
+
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetUserMeetings(Guid userId)
+    {
+        try
+        {
+            var userMeetings = await _meetingService.GetUserMeetings(userId);
+
+            return Ok(userMeetings);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
@@ -54,6 +70,10 @@ public class MeetingsController : ControllerBase
         {
             var createdMeeting = await _meetingService.CreateMeeting(meetingRequest);
             return CreatedAtAction(nameof(GetMeeting), new { id = createdMeeting.Id }, createdMeeting);
+        }
+        catch (MeetingConflictException ex)
+        {
+            return Conflict(ex.Message);
         }
         catch (ArgumentException ex)
         {

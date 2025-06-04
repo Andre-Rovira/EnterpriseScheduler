@@ -36,6 +36,23 @@ public class MeetingRepository : IMeetingRepository
         };
     }
 
+    public async Task<IEnumerable<Meeting>> GetUserMeetings(Guid userId)
+    {
+        return await _context.Meetings
+            .Include(m => m.Participants)
+            .Where(m => m.Participants.Any(p => p.Id == userId))
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Meeting>> GetMeetingsInTimeRange(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        return await _context.Meetings
+            .Include(m => m.Participants)
+            .Where(m => m.Participants.Any(p => participantIds.Contains(p.Id)))
+            .Where(m => m.StartTime < endTime && m.EndTime > startTime)
+            .ToListAsync();
+    }
+
     public async Task<Meeting> GetByIdAsync(Guid id)
     {
         var meeting = await _context.Meetings

@@ -1,10 +1,12 @@
 using AutoMapper;
 using EnterpriseScheduler.Constants;
+using EnterpriseScheduler.Exceptions;
 using EnterpriseScheduler.Interfaces.Services;
 using EnterpriseScheduler.Interfaces.Repositories;
 using EnterpriseScheduler.Models;
 using EnterpriseScheduler.Models.Common;
 using EnterpriseScheduler.Models.DTOs.Meetings;
+using TimeZoneConverter;
 
 namespace EnterpriseScheduler.Services;
 
@@ -32,6 +34,23 @@ public class MeetingService : IMeetingService
         return _mapper.Map<PaginatedResult<MeetingResponse>>(result);
     }
 
+    public async Task<IEnumerable<MeetingResponse>> GetUserMeetings(Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        var timeZoneInfo = TZConvert.GetTimeZoneInfo(user.TimeZone);
+
+        var meetings = await _meetingRepository.GetUserMeetings(userId);
+        var meetingResponses = _mapper.Map<IEnumerable<MeetingResponse>>(meetings);
+
+        foreach (var meeting in meetingResponses)
+        {
+            meeting.StartTime = TimeZoneInfo.ConvertTime(meeting.StartTime, timeZoneInfo);
+            meeting.EndTime = TimeZoneInfo.ConvertTime(meeting.EndTime, timeZoneInfo);
+        }
+
+        return meetingResponses;
+    }
+
     public async Task<MeetingResponse> GetMeeting(Guid id)
     {
         var meeting = await _meetingRepository.GetByIdAsync(id);
@@ -44,10 +63,19 @@ public class MeetingService : IMeetingService
         ConvertToUtc(meetingRequest);
         ValidateMeetingTimes(meetingRequest);
 
+        var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        var participantIds = participants.Select(p => p.Id).ToList();
+
+        var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+        if (conflicts.Any())
+        {
+            var availableSlots = await FindAvailableSlots(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+            throw new MeetingConflictException(availableSlots);
+        }
+
         var meeting = _mapper.Map<Meeting>(meetingRequest);
         meeting.Id = Guid.NewGuid();
-
-        meeting.Participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        meeting.Participants = participants;
 
         await _meetingRepository.AddAsync(meeting);
 
@@ -60,9 +88,19 @@ public class MeetingService : IMeetingService
         ValidateMeetingTimes(meetingRequest);
 
         var existingMeeting = await _meetingRepository.GetByIdAsync(id);
-        _mapper.Map(meetingRequest, existingMeeting);
 
-        existingMeeting.Participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        var participantIds = participants.Select(p => p.Id).ToList();
+
+        var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+        if (conflicts.Any())
+        {
+            var availableSlots = await FindAvailableSlots(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+            throw new MeetingConflictException(availableSlots);
+        }
+
+        _mapper.Map(meetingRequest, existingMeeting);
+        existingMeeting.Participants = participants;
 
         await _meetingRepository.UpdateAsync(existingMeeting);
 
@@ -103,5 +141,79 @@ public class MeetingService : IMeetingService
         }
 
         return participants.ToList();
+    }
+
+    private async Task<IEnumerable<Meeting>> CheckForConflicts(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        return await _meetingRepository.GetMeetingsInTimeRange(startTime, endTime, participantIds);
+    }
+
+    private async Task<IEnumerable<TimeSlot>> FindAvailableSlots(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        var duration = endTime - startTime;
+        var availableSlots = new List<TimeSlot>();
+        var searchEndTime = startTime.AddDays(7);
+
+        var meetings = await GetOrderedMeetingsInRange(startTime, searchEndTime, participantIds);
+
+        if (!meetings.Any())
+        {
+            return new[] { CreateTimeSlot(startTime, duration) };
+        }
+
+        FindSlotsBetweenMeetings(meetings, duration, availableSlots);
+
+        if (availableSlots.Count < 3)
+        {
+            FindSlotsAfterLastMeeting(meetings.Last(), duration, availableSlots);
+        }
+
+        return availableSlots;
+    }
+
+    private async Task<List<Meeting>> GetOrderedMeetingsInRange(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        var meetings = await _meetingRepository.GetMeetingsInTimeRange(startTime, endTime, participantIds);
+        return meetings.OrderBy(m => m.StartTime).ToList();
+    }
+
+    private void FindSlotsBetweenMeetings(List<Meeting> meetings, TimeSpan duration, List<TimeSlot> availableSlots)
+    {
+        for (int i = 0; i < meetings.Count - 1 && availableSlots.Count < 3; i++)
+        {
+            var currentMeeting = meetings[i];
+            var nextMeeting = meetings[i + 1];
+
+            FindConsecutiveSlotsInGap(currentMeeting.EndTime, nextMeeting.StartTime, duration, availableSlots);
+        }
+    }
+
+    private void FindSlotsAfterLastMeeting(Meeting lastMeeting, TimeSpan duration, List<TimeSlot> availableSlots)
+    {
+        var currentSlotStart = lastMeeting.EndTime;
+        while (availableSlots.Count < 3)
+        {
+            availableSlots.Add(CreateTimeSlot(currentSlotStart, duration));
+            currentSlotStart = currentSlotStart.Add(duration);
+        }
+    }
+
+    private void FindConsecutiveSlotsInGap(DateTimeOffset gapStart, DateTimeOffset gapEnd, TimeSpan duration, List<TimeSlot> availableSlots)
+    {
+        var currentSlotStart = gapStart;
+        while (currentSlotStart.Add(duration) <= gapEnd && availableSlots.Count < 3)
+        {
+            availableSlots.Add(CreateTimeSlot(currentSlotStart, duration));
+            currentSlotStart = currentSlotStart.Add(duration);
+        }
+    }
+
+    private TimeSlot CreateTimeSlot(DateTimeOffset startTime, TimeSpan duration)
+    {
+        return new TimeSlot
+        {
+            StartTime = startTime.ToUniversalTime(),
+            EndTime = startTime.Add(duration).ToUniversalTime()
+        };
     }
 }
