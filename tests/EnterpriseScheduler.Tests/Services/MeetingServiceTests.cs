@@ -58,8 +58,27 @@ public class MeetingServiceTests
             Name = "Test User",
             TimeZone = "UTC"
         };
-        var meetings = new List<Meeting>();
-        var expectedResponses = new List<MeetingResponse>();
+        var meetings = new List<Meeting>()
+        {
+            new Meeting
+            {
+                Id = Guid.NewGuid(),
+                Title = "Test Meeting",
+                StartTime = DateTimeOffset.UtcNow,
+                EndTime = DateTimeOffset.UtcNow.AddHours(1),
+                Participants = new List<User> { user }
+            }
+        };
+        var expectedResponses = new List<MeetingResponse>()
+        {
+            new MeetingResponse
+            {
+                Id = meetings[0].Id,
+                Title = meetings[0].Title,
+                StartTime = meetings[0].StartTime,
+                EndTime = meetings[0].EndTime
+            }
+        };
 
         _userRepositoryMock.Setup(x => x.GetByIdAsync(userId))
             .ReturnsAsync(user);
@@ -108,6 +127,153 @@ public class MeetingServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(expectedResponse, result);
+    }
+
+    [Fact]
+    public async Task CreateMeeting_WithInvalidTimes_ThrowsArgumentException()
+    {
+        // Arrange
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow.AddHours(1),
+            EndTime = DateTimeOffset.UtcNow // End time is before start time
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _meetingService.CreateMeeting(meetingRequest));
+    }
+
+    [Fact]
+    public async Task CreateMeeting_WithNullParticipantIds_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = null // Null participant IDs
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _meetingService.CreateMeeting(meetingRequest));
+    }
+
+    [Fact]
+    public async Task CreateMeeting_WithNoParticipants_ThrowsArgumentException()
+    {
+        // Arrange
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid>() // No participants
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _meetingService.CreateMeeting(meetingRequest));
+    }
+
+    [Fact]
+    public async Task CreateMeeting_WithNonExistentParticipants_ThrowsArgumentException()
+    {
+        // Arrange
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid> { Guid.NewGuid() } // Non-existent participant
+        };
+
+        _userRepositoryMock.Setup(x => x.GetByIdsAsync(meetingRequest.ParticipantIds))
+            .ReturnsAsync(new List<User>()); // No participants found
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _meetingService.CreateMeeting(meetingRequest));
+    }
+
+    [Fact]
+    public async Task CreateMeeting_WhenConflictAndNoMeetingsInRange_ReturnsSingleAvailableSlot()
+    {
+        // Arrange
+        var startTime = DateTimeOffset.UtcNow.AddHours(2);
+        var endTime = startTime.AddHours(1);
+        var participantId = Guid.NewGuid();
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = startTime,
+            EndTime = endTime,
+            ParticipantIds = new List<Guid> { participantId }
+        };
+        var participants = new List<User>
+        {
+            new User { Id = participantId, Name = "Test User", TimeZone = "UTC" }
+        };
+        // Simulate a conflict (so FindAvailableSlots is called), but no meetings in the next 7 days
+        _userRepositoryMock.Setup(x => x.GetByIdsAsync(meetingRequest.ParticipantIds))
+            .ReturnsAsync(participants);
+        _meetingRepositoryMock.Setup(x => x.GetMeetingsInTimeRange(startTime, endTime, It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(new List<Meeting> { new Meeting { Id = Guid.NewGuid(), Title = "Conflict", StartTime = startTime.AddMinutes(-30), EndTime = startTime.AddMinutes(30), Participants = new List<User>() } }); // conflict
+        _meetingRepositoryMock.Setup(x => x.GetMeetingsInTimeRange(startTime, startTime.AddDays(7), It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(new List<Meeting>()); // no meetings in next 7 days
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<MeetingConflictException>(() => _meetingService.CreateMeeting(meetingRequest));
+        var slot = Assert.Single(ex.AvailableSlots);
+        Assert.Equal(startTime.ToUniversalTime(), slot.StartTime);
+        Assert.Equal(endTime.ToUniversalTime(), slot.EndTime);
+    }
+
+    [Fact]
+    public async Task CreateMeeting_WhenConflictAndMeetingsInRange_ReturnsSingleAvailableSlot()
+    {
+        // Arrange
+        var startTime = DateTimeOffset.UtcNow.AddHours(2);
+        var endTime = startTime.AddHours(1);
+        var participantId = Guid.NewGuid();
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = startTime,
+            EndTime = endTime,
+            ParticipantIds = new List<Guid> { participantId }
+        };
+        var participants = new List<User>
+        {
+            new User { Id = participantId, Name = "Test User", TimeZone = "UTC" }
+        };
+        // Simulate a conflict (so FindAvailableSlots is called), but no meetings in the next 7 days
+        _userRepositoryMock.Setup(x => x.GetByIdsAsync(meetingRequest.ParticipantIds))
+            .ReturnsAsync(participants);
+        _meetingRepositoryMock.Setup(x => x.GetMeetingsInTimeRange(startTime, endTime, It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(new List<Meeting> { new Meeting { Id = Guid.NewGuid(), Title = "Conflict", StartTime = startTime.AddMinutes(-30), EndTime = startTime.AddMinutes(30), Participants = new List<User>() } }); // conflict
+        _meetingRepositoryMock.Setup(x => x.GetMeetingsInTimeRange(startTime, startTime.AddDays(7), It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(new List<Meeting>()
+            {
+                new Meeting
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Existing Meeting",
+                    StartTime = startTime.AddHours(1),
+                    EndTime = startTime.AddHours(2),
+                    Participants = new List<User>()
+                },
+                new Meeting
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Another Meeting",
+                    StartTime = startTime.AddHours(3),
+                    EndTime = startTime.AddHours(4),
+                    Participants = new List<User>()
+                }
+            }); // meetings in next 7 days
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<MeetingConflictException>(() => _meetingService.CreateMeeting(meetingRequest));
     }
 
     [Fact]
@@ -205,6 +371,59 @@ public class MeetingServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<MeetingConflictException>(() => _meetingService.CreateMeeting(meetingRequest));
+    }
+
+    [Fact]
+    public async Task UpdateMeeting_WithConflictingTimes_ThrowsMeetingConflictException()
+    {
+        // Arrange
+        var meetingId = Guid.NewGuid();
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid> { Guid.NewGuid() }
+        };
+
+        var existingMeeting = new Meeting
+        {
+            Id = meetingId,
+            Title = "Existing Meeting",
+            StartTime = DateTimeOffset.UtcNow.AddHours(2),
+            EndTime = DateTimeOffset.UtcNow.AddHours(3),
+            Participants = new List<User>()
+        };
+        var participants = new List<User>
+        {
+            new User
+            {
+                Id = meetingRequest.ParticipantIds.First(),
+                Name = "Test User",
+                TimeZone = "UTC"
+            }
+           };
+        var conflictingMeetings = new List<Meeting>
+        {
+            new Meeting
+            {
+                Id = Guid.NewGuid(),
+                Title = "Conflicting Meeting",
+                StartTime = DateTimeOffset.UtcNow,
+                EndTime = DateTimeOffset.UtcNow.AddHours(1),
+                Participants = new List<User>()
+            }
+        };
+
+        _meetingRepositoryMock.Setup(x => x.GetByIdAsync(meetingId))
+            .ReturnsAsync(existingMeeting);
+        _userRepositoryMock.Setup(x => x.GetByIdsAsync(meetingRequest.ParticipantIds))
+            .ReturnsAsync(participants);
+        _meetingRepositoryMock.Setup(x => x.GetMeetingsInTimeRange(It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<IEnumerable<Guid>>()))
+            .ReturnsAsync(conflictingMeetings);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<MeetingConflictException>(() => _meetingService.UpdateMeeting(meetingId, meetingRequest));
     }
 
     [Fact]
