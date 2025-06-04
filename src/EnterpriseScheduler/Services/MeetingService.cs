@@ -62,10 +62,20 @@ public class MeetingService : IMeetingService
         ConvertToUtc(meetingRequest);
         ValidateMeetingTimes(meetingRequest);
 
+        var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        var participantIds = participants.Select(p => p.Id).ToList();
+        
+        // Check for conflicts
+        var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+        if (conflicts.Any())
+        {
+            var availableSlots = await FindAvailableSlots(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+            throw new ArgumentException($"Meeting conflicts with existing meetings. Here are the next 3 available slots: {string.Join(", ", availableSlots)}");
+        }
+
         var meeting = _mapper.Map<Meeting>(meetingRequest);
         meeting.Id = Guid.NewGuid();
-
-        meeting.Participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        meeting.Participants = participants;
 
         await _meetingRepository.AddAsync(meeting);
 
@@ -121,5 +131,52 @@ public class MeetingService : IMeetingService
         }
 
         return participants.ToList();
+    }
+
+    private async Task<IEnumerable<Meeting>> CheckForConflicts(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        return await _meetingRepository.GetMeetingsInTimeRange(startTime, endTime, participantIds);
+    }
+
+    private async Task<IEnumerable<TimeSlot>> FindAvailableSlots(DateTimeOffset startTime, DateTimeOffset endTime, IEnumerable<Guid> participantIds)
+    {
+        var duration = endTime - startTime;
+        var availableSlots = new List<TimeSlot>();
+
+        // Get all meetings for participants ordered by start time
+        var meetings = await _meetingRepository.GetMeetingsInTimeRange(startTime, startTime.AddDays(7), participantIds);
+        var orderedMeetings = meetings.OrderBy(m => m.StartTime).ToList();
+
+        // If no meetings exist, the first slot is available
+        if (!orderedMeetings.Any())
+        {
+            availableSlots.Add(new TimeSlot { StartTime = startTime, EndTime = startTime.Add(duration) });
+            return availableSlots;
+        }
+
+        // Check for gaps between meetings
+        for (int i = 0; i < orderedMeetings.Count - 1; i++)
+        {
+            var currentMeeting = orderedMeetings[i];
+            var nextMeeting = orderedMeetings[i + 1];
+            var gapStart = currentMeeting.EndTime;
+            var gapEnd = nextMeeting.StartTime;
+
+            // If gap is long enough for our meeting
+            if (gapEnd - gapStart >= duration)
+            {
+                availableSlots.Add(new TimeSlot { StartTime = gapStart, EndTime = gapStart.Add(duration) });
+                if (availableSlots.Count >= 3) break;
+            }
+        }
+
+        // Check if there's a gap after the last meeting
+        if (availableSlots.Count < 3)
+        {
+            var lastMeeting = orderedMeetings.Last();
+            availableSlots.Add(new TimeSlot { StartTime = lastMeeting.EndTime, EndTime = lastMeeting.EndTime.Add(duration) });
+        }
+
+        return availableSlots;
     }
 }

@@ -8,6 +8,7 @@ This project provides a robust API for managing and scheduling meetings. The API
 - Accepts meeting times in any timezone (any offset)
 - Automatically converts all times to UTC for storage
 - Converts meeting times to the user's local timezone when retrieving their meetings
+- Checks for scheduling conflicts and suggests alternative time slots when conflicts are found
 
 ## 🚀 CI/CD and Quality Assurance
 
