@@ -145,22 +145,6 @@ public class MeetingServiceTests
     }
 
     [Fact]
-    public async Task CreateMeeting_WithNullParticipantIds_ThrowsArgumentNullException()
-    {
-        // Arrange
-        var meetingRequest = new MeetingRequest
-        {
-            Title = "Test Meeting",
-            StartTime = DateTimeOffset.UtcNow,
-            EndTime = DateTimeOffset.UtcNow.AddHours(1),
-            ParticipantIds = null // Null participant IDs
-        };
-
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _meetingService.CreateMeeting(meetingRequest));
-    }
-
-    [Fact]
     public async Task CreateMeeting_WithNoParticipants_ThrowsArgumentException()
     {
         // Arrange

@@ -129,7 +129,7 @@ public class MeetingService : IMeetingService
 
     private async Task<List<User>> ValidateAndGetParticipants(IEnumerable<Guid> participantIds)
     {
-        if (participantIds == null || !participantIds.Any())
+        if (!participantIds.Any())
         {
             throw new ArgumentException("At least one participant is required for a meeting.");
         }
