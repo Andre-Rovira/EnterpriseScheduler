@@ -11,4 +11,4 @@ public class MeetingConflictException : Exception
     {
         AvailableSlots = availableSlots;
     }
-} 
+}

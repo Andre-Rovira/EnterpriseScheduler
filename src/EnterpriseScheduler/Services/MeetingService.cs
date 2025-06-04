@@ -66,7 +66,6 @@ public class MeetingService : IMeetingService
         var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
         var participantIds = participants.Select(p => p.Id).ToList();
         
-        // Check for conflicts
         var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
         if (conflicts.Any())
         {
@@ -89,9 +88,19 @@ public class MeetingService : IMeetingService
         ValidateMeetingTimes(meetingRequest);
 
         var existingMeeting = await _meetingRepository.GetByIdAsync(id);
-        _mapper.Map(meetingRequest, existingMeeting);
 
-        existingMeeting.Participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        var participants = await ValidateAndGetParticipants(meetingRequest.ParticipantIds);
+        var participantIds = participants.Select(p => p.Id).ToList();
+        
+        var conflicts = await CheckForConflicts(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+        if (conflicts.Any())
+        {
+            var availableSlots = await FindAvailableSlots(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
+            throw new MeetingConflictException(availableSlots);
+        }
+
+        _mapper.Map(meetingRequest, existingMeeting);
+        existingMeeting.Participants = participants;
 
         await _meetingRepository.UpdateAsync(existingMeeting);
 
