@@ -120,6 +120,28 @@ public class MeetingsControllerTests
     }
 
     [Fact]
+    public async Task CreateMeeting_WithInvalidModelState_ReturnsBadRequest()
+    {
+        // Arrange
+        _meetingsController.ModelState.AddModelError("Title", "Title is required");
+
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid> { Guid.NewGuid() }
+        };
+
+        // Act
+        var result = await _meetingsController.CreateMeeting(meetingRequest);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
     public async Task CreateMeeting_WithValidRequest_ReturnsCreatedResult()
     {
         // Arrange
@@ -180,6 +202,52 @@ public class MeetingsControllerTests
     }
 
     [Fact]
+    public async Task CreateMeeting_WithInvalidRequest_ReturnsBadRequest()
+    {
+        // Arrange
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Test Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid> { Guid.NewGuid() }
+        };
+
+        _meetingServiceMock.Setup(x => x.CreateMeeting(meetingRequest))
+            .ThrowsAsync(new ArgumentException("Invalid meeting request"));
+
+        // Act
+        var result = await _meetingsController.CreateMeeting(meetingRequest);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid meeting request", badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task UpdateMeeting_WithInvalidModelState_ReturnsBadRequest()
+    {
+        // Arrange
+        _meetingsController.ModelState.AddModelError("Title", "Title is required");
+
+        var meetingId = Guid.NewGuid();
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Updated Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid> { Guid.NewGuid() }
+        };
+
+        // Act
+        var result = await _meetingsController.UpdateMeeting(meetingId, meetingRequest);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
     public async Task UpdateMeeting_WithValidRequest_ReturnsOkResult()
     {
         // Arrange
@@ -233,6 +301,30 @@ public class MeetingsControllerTests
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal("Meeting not found", notFoundResult.Value);
+    }
+
+    [Fact]
+    public async Task UpdateMeeting_WithInvalidRequest_ReturnsBadRequest()
+    {
+        // Arrange
+        var meetingId = Guid.NewGuid();
+        var meetingRequest = new MeetingRequest
+        {
+            Title = "Updated Meeting",
+            StartTime = DateTimeOffset.UtcNow,
+            EndTime = DateTimeOffset.UtcNow.AddHours(1),
+            ParticipantIds = new List<Guid> { Guid.NewGuid() }
+        };
+
+        _meetingServiceMock.Setup(x => x.UpdateMeeting(meetingId, meetingRequest))
+            .ThrowsAsync(new ArgumentException("Invalid meeting request"));
+
+        // Act
+        var result = await _meetingsController.UpdateMeeting(meetingId, meetingRequest);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid meeting request", badRequestResult.Value);
     }
 
     [Fact]

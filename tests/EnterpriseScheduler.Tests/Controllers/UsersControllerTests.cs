@@ -83,6 +83,25 @@ public class UsersControllerTests
     }
 
     [Fact]
+    public async Task CreateUser_WithInvalidModel_ReturnsBadRequest()
+    {
+        // Arrange
+        var userRequest = new UserRequest
+        {
+            Name = "", // Invalid name
+            TimeZone = "UTC"
+        };
+        _usersController.ModelState.AddModelError("Name", "Name is required");
+
+        // Act
+        var result = await _usersController.CreateUser(userRequest);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
+    }
+
+    [Fact]
     public async Task CreateUser_WithValidRequest_ReturnsCreatedResult()
     {
         // Arrange
@@ -111,6 +130,26 @@ public class UsersControllerTests
         Assert.Equal(nameof(UsersController.GetUser), createdResult.ActionName);
         Assert.NotNull(createdResult.RouteValues);
         Assert.Equal(expectedResponse.Id, createdResult.RouteValues["id"]);
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithInvalidModel_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var userRequest = new UserRequest
+        {
+            Name = "", // Invalid name
+            TimeZone = "UTC"
+        };
+        _usersController.ModelState.AddModelError("Name", "Name is required");
+
+        // Act
+        var result = await _usersController.UpdateUser(userId, userRequest);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.NotNull(badRequestResult.Value);
     }
 
     [Fact]
