@@ -1,4 +1,5 @@
 using EnterpriseScheduler.Constants;
+using EnterpriseScheduler.Exceptions;
 using EnterpriseScheduler.Interfaces.Services;
 using EnterpriseScheduler.Models.DTOs.Meetings;
 using Microsoft.AspNetCore.Mvc;
@@ -69,6 +70,10 @@ public class MeetingsController : ControllerBase
         {
             var createdMeeting = await _meetingService.CreateMeeting(meetingRequest);
             return CreatedAtAction(nameof(GetMeeting), new { id = createdMeeting.Id }, createdMeeting);
+        }
+        catch (MeetingConflictException ex)
+        {
+            return Conflict(ex.Message);
         }
         catch (ArgumentException ex)
         {

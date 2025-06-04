@@ -7,6 +7,6 @@ public class TimeSlot
 
     public override string ToString()
     {
-        return $"{StartTime:g} - {EndTime:g}";
+        return $"{StartTime:g} UTC - {EndTime:g} UTC";
     }
 }

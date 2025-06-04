@@ -1,5 +1,6 @@
 using AutoMapper;
 using EnterpriseScheduler.Constants;
+using EnterpriseScheduler.Exceptions;
 using EnterpriseScheduler.Interfaces.Services;
 using EnterpriseScheduler.Interfaces.Repositories;
 using EnterpriseScheduler.Models;
@@ -70,7 +71,7 @@ public class MeetingService : IMeetingService
         if (conflicts.Any())
         {
             var availableSlots = await FindAvailableSlots(meetingRequest.StartTime, meetingRequest.EndTime, participantIds);
-            throw new ArgumentException($"Meeting conflicts with existing meetings. Here are the next 3 available slots: {string.Join(", ", availableSlots)}");
+            throw new MeetingConflictException(availableSlots);
         }
 
         var meeting = _mapper.Map<Meeting>(meetingRequest);
@@ -154,7 +155,7 @@ public class MeetingService : IMeetingService
             return availableSlots;
         }
 
-        // Check for gaps between meetings
+        // Check for gaps between meetings and consecutive slots
         for (int i = 0; i < orderedMeetings.Count - 1; i++)
         {
             var currentMeeting = orderedMeetings[i];
@@ -162,19 +163,34 @@ public class MeetingService : IMeetingService
             var gapStart = currentMeeting.EndTime;
             var gapEnd = nextMeeting.StartTime;
 
-            // If gap is long enough for our meeting
-            if (gapEnd - gapStart >= duration)
+            // Find all possible slots in this gap
+            var currentSlotStart = gapStart;
+            while (currentSlotStart.Add(duration) <= gapEnd)
             {
-                availableSlots.Add(new TimeSlot { StartTime = gapStart, EndTime = gapStart.Add(duration) });
+                availableSlots.Add(new TimeSlot { StartTime = currentSlotStart, EndTime = currentSlotStart.Add(duration) });
+                currentSlotStart = currentSlotStart.Add(duration);
                 if (availableSlots.Count >= 3) break;
             }
+            if (availableSlots.Count >= 3) break;
         }
 
         // Check if there's a gap after the last meeting
         if (availableSlots.Count < 3)
         {
             var lastMeeting = orderedMeetings.Last();
-            availableSlots.Add(new TimeSlot { StartTime = lastMeeting.EndTime, EndTime = lastMeeting.EndTime.Add(duration) });
+            var currentSlotStart = lastMeeting.EndTime;
+            while (availableSlots.Count < 3)
+            {
+                availableSlots.Add(new TimeSlot { StartTime = currentSlotStart, EndTime = currentSlotStart.Add(duration) });
+                currentSlotStart = currentSlotStart.Add(duration);
+            }
+        }
+
+        // Add UTC indication to each slot
+        foreach (var slot in availableSlots)
+        {
+            slot.StartTime = slot.StartTime.ToUniversalTime();
+            slot.EndTime = slot.EndTime.ToUniversalTime();
         }
 
         return availableSlots;
