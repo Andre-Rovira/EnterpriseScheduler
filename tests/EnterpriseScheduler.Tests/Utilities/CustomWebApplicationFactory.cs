@@ -14,7 +14,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        
+
         builder.ConfigureServices(services =>
         {
             // Remove the existing DbContext registration
@@ -59,4 +59,4 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             scope.Dispose();
         });
     }
-} 
+}

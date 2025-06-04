@@ -22,10 +22,10 @@ public class MeetingsControllerIntegrationTests : IClassFixture<CustomWebApplica
         _client = _factory.CreateClient();
         _scope = _factory.Services.CreateScope();
         _context = _scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
+
         // Ensure database is created and seeded
         _context.Database.EnsureCreated();
-        
+
         // Seed test user if none exists
         if (!_context.Users.Any())
         {
@@ -46,7 +46,7 @@ public class MeetingsControllerIntegrationTests : IClassFixture<CustomWebApplica
         // Arrange
         var testUser = await _context.Users.FirstOrDefaultAsync();
         Assert.NotNull(testUser);
-        
+
         var meetingRequest = new MeetingRequest
         {
             Title = "Test Integration Meeting",
@@ -73,7 +73,7 @@ public class MeetingsControllerIntegrationTests : IClassFixture<CustomWebApplica
         // Arrange
         var testUser = await _context.Users.FirstOrDefaultAsync();
         Assert.NotNull(testUser);
-        
+
         var startTime = DateTimeOffset.UtcNow.AddHours(1);
         var endTime = DateTimeOffset.UtcNow.AddHours(2);
 
@@ -112,4 +112,4 @@ public class MeetingsControllerIntegrationTests : IClassFixture<CustomWebApplica
         _context.Dispose();
         _scope.Dispose();
     }
-} 
+}
